@@ -8,7 +8,12 @@ Grupo Original: Daniel Carlos Casarotto
 
 Teclas:
 
-Setas - Movimentação da câmera
+Segurar Botão esquerdo do mouse e move-lo - rotacionar camera
+Segurar Botão do meio do mouse e move-lo - mover em x e y
+Segurar Scrollar mouse - mover em z
+seta para cima - zoom-in
+seta para baixo - zoom-out
+
 b     - Andar com o cavalo
 <     - Girar o cavalo para a esquerda
 >     - Girar o cavalo para a direita
