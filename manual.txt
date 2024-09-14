@@ -1,0 +1,20 @@
+Grupo Atual(Responsavel pelas melhorias): Diego Gabriel
+	Alexandre Júlio
+	
+Grupo Original: Daniel Carlos Casarotto
+       Eduardo Koerich
+       José Otávio Carlomagno Filho
+
+
+Teclas:
+
+Setas - Movimentação da câmera
+b     - Andar com o cavalo
+<     - Girar o cavalo para a esquerda
+>     - Girar o cavalo para a direita
+F1    - Alternar entre caminhada/trote
+F5    - Exibição em tela Cheia
+F6    - Exibição em Janela
+F7    - Habilitar/Desabilitar iluminação
+F8    - Tirar/Colocar árvores
+F11   - Deixar o cavalo parado (apenas mexe as pernas, mas não se movimenta)
