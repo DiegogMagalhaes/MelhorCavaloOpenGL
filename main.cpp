@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <GL/glut.h>
 #include <math.h>
+#include <iostream>
 
 #define ESCAPE 27
 #define TAMANHO_ESFERA 0.04
@@ -84,6 +85,8 @@ float xCavalo = 0.0;
 float zCavalo = 1.5;
 
 // Prototipo das funcoes
+void posicionaObservador();
+void especificaParametrosVisualizacao();
 void desenhaEsfera();
 void desenhaFemur(int posicao);
 void desenhaCanela(int posicao);
@@ -95,10 +98,15 @@ void renderScene();
 void timer(int value);
 GLUquadricObj *params = gluNewQuadric();
 
-static float angle = 0.0, ratio;
-static float x = 0.0f, y = 0.75f, z = 5.0f;
-static float lx = 0.0f, ly = 0.0f, lz = -1.0f;
+//CAMERA
+static GLfloat angle, fAspect,posX,posY, rotX, rotY, posZ;
+//MOUSE CONTROL VAR
+enum MOUSE_HOLD_STATE {NO_BUTTON_HOLD, LEFT_BUTTON_HOLD, RIGHT_BUTTON_HOLD, MIDDLE_BUTTON_HOLD};
+static float lastX=0, lastY=0;
+static MOUSE_HOLD_STATE mouseHoldState = NO_BUTTON_HOLD;
+#define SENSITIVITY 0.1f;
 
+  
 //---------------------------------------------------------------------------
 void changeSize(int w, int h)
 {
@@ -107,21 +115,17 @@ void changeSize(int w, int h)
   if (h == 0)
     h = 1;
 
-  ratio = 1.0f * w / h;
-  // Reset the coordinate system before modifying
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-
+  Width = w;
+  Height = h;
+  
   // Set the viewport to be the entire window
   glViewport(0, 0, w, h);
+  
+  // Calculates aspect correction
+  fAspect = (GLfloat)w / (GLfloat)h;
 
-  // Set the clipping volume
-  gluPerspective(45, ratio, 1, 1000);
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-  gluLookAt(x, y, z, x + lx, y + ly, z + lz, 0.0f, 1.0f, 0.0f);
+  especificaParametrosVisualizacao();
 }
-
 //---------------------------------------------------------------------------
 void desenhaArvore()
 {
@@ -136,6 +140,14 @@ void desenhaArvore()
 void initScene()
 {
   glEnable(GL_DEPTH_TEST);
+  
+  //init cam values
+  angle = 50;
+  posX = 0;
+  posY = 0;
+  rotX = 20;
+  rotY = 0;
+  posZ = 4;
 }
 //---------------------------------------------------------------------------
 void renderScene(void)
@@ -202,66 +214,50 @@ void renderScene(void)
   glutSwapBuffers();
 }
 //---------------------------------------------------------------------------
-void orientMe(float ang)
-{
-  lx = sin(ang);
-  lz = -cos(ang);
-  glLoadIdentity();
-  gluLookAt(x, y, z,
-            x + lx, y + ly, z + lz,
-            0.0f, 1.0f, 0.0f);
-}
-//---------------------------------------------------------------------------
-void moveMeFlat(int i)
-{
-  x = x + i * (lx) * 0.1;
-  z = z + i * (lz) * 0.1;
-  glLoadIdentity();
-  gluLookAt(x, y, z,
-            x + lx, y + ly, z + lz,
-            0.0f, 1.0f, 0.0f);
+
+void moverCavalo(){
+  float maiorAngulo = caminhando ? 20.0 : 15.0;
+      if(anguloPescoco > maiorAngulo || anguloPescoco < 0.0)
+        anguloPescocoSubindo = !anguloPescocoSubindo;
+      float incremento = caminhando ? 1.5 : 3.0;
+      anguloPescoco = anguloPescocoSubindo ? anguloPescoco + incremento : anguloPescoco - incremento;
+      if(passo < 10) {
+        caminhando ? passo +=2 : passo +=3;
+        if(estagio==0 || estagio==2)
+          deslocamentoYTronco += 0.01;
+        else if(estagio==1 || estagio==3)
+          deslocamentoYTronco -= 0.01;
+      } else {
+        passo = 0;
+        int estagioFinal = 5;
+        if(!caminhando)
+          estagioFinal = 3;
+        if(estagio < estagioFinal)
+          estagio++;
+        else
+          estagio = 0;
+      }
+      if(movimentarCavalo){
+        float deslocamento = caminhando ? 0.03 : 0.12;
+        float anguloGraus = anguloCavalo*(M_PI/180);
+        xCavalo += deslocamento*cos(anguloGraus);
+        zCavalo -= deslocamento*sin(anguloGraus);
+      }
 }
 //---------------------------------------------------------------------------
 void processNormalKeys(unsigned char key, int x, int y)
 {
-  switch (key)
-  {
+
+ switch(key){
   case 27:
     exit(0);
     break;
-  case 'b':
-  {
-    float maiorAngulo = caminhando ? 20.0 : 15.0;
-    if (anguloPescoco > maiorAngulo || anguloPescoco < 0.0)
-      anguloPescocoSubindo = !anguloPescocoSubindo;
-    float incremento = caminhando ? 1.5 : 3.0;
-    anguloPescoco = anguloPescocoSubindo ? anguloPescoco + incremento : anguloPescoco - incremento;
-    if (passo < 10)
-    {
-      caminhando ? passo += 2 : passo += 3;
-      if (estagio == 0 || estagio == 2)
-        deslocamentoYTronco += 0.01;
-      else if (estagio == 1 || estagio == 3)
-        deslocamentoYTronco -= 0.01;
-    }
-    else
-    {
-      passo = 0;
-      int estagioFinal = 5;
-      if (!caminhando)
-        estagioFinal = 3;
-      if (estagio < estagioFinal)
-        estagio++;
-      else
-        estagio = 0;
-    }
-    if (movimentarCavalo)
-    {
-      float deslocamento = caminhando ? 0.03 : 0.12;
-      float anguloGraus = anguloCavalo * (M_PI / 180);
-      xCavalo += deslocamento * cos(anguloGraus);
-      zCavalo -= deslocamento * sin(anguloGraus);
-    }
+  case 'b': {
+    moverCavalo();
+    break;
+  }
+  case 'B': {
+    moverCavalo();
     break;
   }
   case ',':
@@ -274,49 +270,161 @@ void processNormalKeys(unsigned char key, int x, int y)
   renderScene();
 }
 //---------------------------------------------------------------------------
-
-void inputKey(int key, int x, int y)
+void posicionaObservador(void)
 {
+    // Specifies projection coordinate system
+    glMatrixMode(GL_MODELVIEW);
+    // Initializes projection coordinate system
+    glLoadIdentity();
+    // Specifies camera position and rotation
+    glTranslatef(posX, posY, -posZ);
+    glRotatef(rotX, 1+fabs(posX), 0, 0);
+    glRotatef(rotY, 0, 1+fabs(posY), 0);
+}
+//---------------------------------------------------------------------------
+// Function used to specify the preview volume
+void especificaParametrosVisualizacao(void)
+{
+    // Specifies projection coordinate system
+    glMatrixMode(GL_PROJECTION);
+    // Initializes projection coordinate system
+    glLoadIdentity();
 
-  switch (key)
-  {
-  case GLUT_KEY_LEFT:
-    angle -= 0.05f;
-    orientMe(angle);
-    break;
-  case GLUT_KEY_RIGHT:
-    angle += 0.05f;
-    orientMe(angle);
-    break;
-  case GLUT_KEY_UP:
-    moveMeFlat(5);
-    break;
-  case GLUT_KEY_DOWN:
-    moveMeFlat(-5);
-    break;
-  case GLUT_KEY_F1:
-    deslocamentoYTronco = 0.0;
-    caminhando = !caminhando;
-    break;
-  case GLUT_KEY_F5:
-    glutFullScreen();
-    break;
-  case GLUT_KEY_F6:
-    glutReshapeWindow(640, 360);
-    break;
-  case GLUT_KEY_F7:
-    iluminacao = !iluminacao;
-    break;
-  case GLUT_KEY_F8:
-    arvores = !arvores;
-    break;
-  case GLUT_KEY_F11:
-    movimentarCavalo = !movimentarCavalo;
-    break;
-  }
-  renderScene();
+    // Specifies the perspective projection (angle, aspect, zMin, zMax)
+    gluPerspective(angle, fAspect, 0.5, 500);
+    posicionaObservador();
 }
 
+//---------------------------------------------------------------------------
+void inputMouse(int button, int state, int x, int y)
+{   
+    if (button == GLUT_LEFT_BUTTON){
+        if (state == GLUT_DOWN)
+        { 
+          mouseHoldState = LEFT_BUTTON_HOLD;
+        }
+    }
+    else if (button == GLUT_RIGHT_BUTTON){
+        if (state == GLUT_DOWN)
+        { 
+          mouseHoldState = RIGHT_BUTTON_HOLD;
+        }
+    }
+    else if (button == GLUT_MIDDLE_BUTTON){
+        if (state == GLUT_DOWN)
+        { 
+          mouseHoldState = MIDDLE_BUTTON_HOLD;
+        }
+    }
+    else{
+      mouseHoldState = NO_BUTTON_HOLD;
+    }
+
+    //Mouse scroll, up and down
+    if (button == 3){
+        if (state == GLUT_DOWN)
+        { 
+          posZ--;
+        }
+    }
+    if (button == 4){
+        if (state == GLUT_DOWN)
+        { 
+          posZ++;
+        }
+    }
+
+    especificaParametrosVisualizacao();
+    glutPostRedisplay();
+}
+//---------------------------------------------------------------------------
+void inputKey(int key, int x, int y) {
+
+  switch (key) {
+    case GLUT_KEY_UP:
+      // Zoom-in
+      if (angle >= 10) angle -= 5;
+      break;
+    case GLUT_KEY_DOWN:
+      // Zoom-out
+      if (angle <= 130) angle += 5;
+      break;
+    case GLUT_KEY_F1:
+      deslocamentoYTronco = 0.0;
+      caminhando = !caminhando;
+      break;
+    case GLUT_KEY_F5:
+      glutFullScreen ( );
+      break;
+    case GLUT_KEY_F6:
+      glutReshapeWindow ( 640, 360 );
+      break;
+    case GLUT_KEY_F7:
+      iluminacao = !iluminacao;
+      break;
+    case GLUT_KEY_F8:
+      arvores = !arvores;
+      break;
+    case GLUT_KEY_F11:
+      movimentarCavalo = !movimentarCavalo;
+      break;
+  }
+  especificaParametrosVisualizacao();
+  glutPostRedisplay();
+}
+//---------------------------------------------------------------------------
+void mouseMotion(int x, int y) {
+
+  float xoffset = x - lastX;
+  float yoffset = lastY - y;  
+    
+  lastX = x;
+  lastY = y;
+
+  //When the middle mouse button is pressing, move the camera in X and Y 
+  if(mouseHoldState == MIDDLE_BUTTON_HOLD){
+    if(xoffset< 0){
+      posX -= SENSITIVITY;
+    }
+    else if(xoffset>0){
+      posX += SENSITIVITY;
+    }
+    if(yoffset < 0){
+      posY -= SENSITIVITY;
+    }
+    else if(yoffset > 0){
+      posY += SENSITIVITY;
+    }
+  }
+
+  //When the left mouse button is pressing, rotate the camera in X and Y
+  if(mouseHoldState == LEFT_BUTTON_HOLD){
+    float modY = 1;
+    float modX = 1;
+    if(fabs(xoffset)>fabs(xoffset)){
+      modX = 10;
+    }
+    else{
+      modY = 10;
+    }
+    
+    if(xoffset< 0){
+      rotY += 5*SENSITIVITY;
+    }
+    else if(xoffset>0){
+      rotY -= 5*SENSITIVITY;
+    }
+    if(yoffset < 0){
+      rotX += 5*SENSITIVITY;
+    }
+    else if(yoffset > 0){
+      rotX -= 5*SENSITIVITY;
+    }
+  }
+            
+    posicionaObservador();
+    glutPostRedisplay();
+}
 //---------------------------------------------------------------------------
 int main(int argc, char **argv)
 {
@@ -334,7 +442,9 @@ int main(int argc, char **argv)
 
   glutKeyboardFunc(processNormalKeys);
   glutSpecialFunc(inputKey);
+  glutMouseFunc(inputMouse);
 
+  glutMotionFunc(mouseMotion);
   glutDisplayFunc(renderScene);
   glutReshapeFunc(changeSize);
   glutTimerFunc(100, timer, 0);
