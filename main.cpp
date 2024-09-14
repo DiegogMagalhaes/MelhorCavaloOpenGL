@@ -149,6 +149,10 @@ void renderScene(void)
   GLfloat ambientLight[] = {1, 1, 1, 1};
   GLfloat specularLight[] = {0.2, 0.3, 0.3, 1};
   GLfloat lightPos[] = {300.0f, 2000.0f, -20.0f, 1.0f};
+  GLfloat diffuseLight1[] = {1.0, 1.0, 1.0, 1.0};
+  GLfloat ambientLight1[] = {0.5, 0.5, 0.5, 1.0};
+  GLfloat specularLight1[] = {1.0, 1.0, 1.0, 1.0};
+  GLfloat lightPos1[] = {0.0f, -10.0f, 0.0f, 1.0f};
   if (iluminacao)
     glEnable(GL_LIGHTING);
   else
@@ -158,6 +162,11 @@ void renderScene(void)
   glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
   glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
   glEnable(GL_LIGHT0);
+  glLightfv(GL_LIGHT1, GL_AMBIENT, ambientLight1);
+  glLightfv(GL_LIGHT1, GL_SPECULAR, specularLight1);
+  glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuseLight1);
+  glLightfv(GL_LIGHT1, GL_POSITION, lightPos1);
+  glEnable(GL_LIGHT1);
   glEnable(GL_COLOR_MATERIAL);
   glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, diffuseLight);
   glMateriali(GL_FRONT_AND_BACK, GL_SHININESS, 50);
