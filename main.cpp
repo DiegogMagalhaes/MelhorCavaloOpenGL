@@ -11,6 +11,8 @@
 #include <GL/glut.h>
 #include <math.h>
 #include <iostream>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #define ESCAPE 27
 #define TAMANHO_ESFERA 0.04
@@ -100,11 +102,17 @@ GLUquadricObj *params = gluNewQuadric();
 
 //CAMERA
 static GLfloat angle, fAspect,posX,posY, rotX, rotY, posZ;
+
 //MOUSE CONTROL VAR
 enum MOUSE_HOLD_STATE {NO_BUTTON_HOLD, LEFT_BUTTON_HOLD, RIGHT_BUTTON_HOLD, MIDDLE_BUTTON_HOLD};
 static float lastX=0, lastY=0;
 static MOUSE_HOLD_STATE mouseHoldState = NO_BUTTON_HOLD;
 #define SENSITIVITY 0.5f;
+
+//TEXTURA
+GLuint idTextura;
+unsigned char *imagemTextura;
+bool texturaAtivada = true;
 
   
 //---------------------------------------------------------------------------
@@ -419,6 +427,13 @@ void mouseMotion(int x, int y) {
     glutPostRedisplay();
 }
 //---------------------------------------------------------------------------
+unsigned char *leTextura(char *filename, int &width, int &height, int &channels)
+{
+    unsigned char *img_data = stbi_load(filename, &width, &height, &channels, 3);
+
+    return img_data;
+}
+//---------------------------------------------------------------------------
 int main(int argc, char **argv)
 {
 #ifdef BUILDER
@@ -430,7 +445,7 @@ int main(int argc, char **argv)
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(640, 360);
   glutCreateWindow("Trabalho de computa��o gr�fica");
-
+  
   initScene();
 
   glutKeyboardFunc(processNormalKeys);
@@ -595,28 +610,28 @@ void desenhaRabo()
   float angulo2 = caminhando ? passoRabo : passoRabo / 2;
 
   // primeiro segmento
-  glColor3f(0.6, 0.5, 0.3);
+  glColor3f(0.6f, 0.3f, 0.1f);
   glutSolidSphere(TAMANHO_ESFERA / 1.25, 8, 8);
-  glColor3f(1.0, 0.8, 0);
+  glColor3f(0.6f, 0.3f, 0.1f);
   glRotatef(90 - angulo2, 0, 1, 0);
   glRotatef(-45 + angulo, 1, 0, 0);
   glTranslatef(0, 0, -0.20);
   gluCylinder(params, 0.020, 0.03, 0.20, 15, 2);
 
   // segundo segmento
-  glColor3f(0.6, 0.5, 0.3);
+  glColor3f(0.6f, 0.3f, 0.1f);
   glutSolidSphere(TAMANHO_ESFERA / 1.5, 8, 8);
-  glColor3f(1.0, 0.8, 0);
+  glColor3f(0.6f, 0.3f, 0.1f);
   glRotatef(-angulo2 * 2, 0, 1, 0);
   glRotatef(-24 + angulo / 2, 1, 0, 0);
   glTranslatef(0, 0, -0.15);
   gluCylinder(params, 0.015, 0.020, 0.15, 15, 2);
 
   // terceiro segmento
-  glColor3f(0.6, 0.5, 0.3);
+  glColor3f(0.6f, 0.3f, 0.1f);
   glutSolidSphere(TAMANHO_ESFERA / 2, 8, 8);
   glRotatef(-angulo2 * 3, 0, 1, 0);
-  glColor3f(1.0, 0.8, 0);
+  glColor3f(0.6f, 0.3f, 0.1f);
   glTranslatef(0, 0, -0.25);
   gluCylinder(params, 0.0, 0.015, 0.25, 15, 2);
 }
@@ -699,7 +714,7 @@ void desenhaTronco()
     glTranslatef(0.0, deslocamentoYTronco, 0.0);
 
   glPushMatrix();
-  glColor3f(0.6, 0.4, 0.1);
+  glColor3f(0.6f, 0.3f, 0.1f);
   glPushMatrix();
   glTranslatef(-LARG_TRONCO * 0.2, 0, 0.0);
   glPushMatrix();
@@ -717,7 +732,7 @@ void desenhaTronco()
   glPopMatrix();
 
   //  glutSolidCube(0.5);
-  glColor3f(0.6, 0.25, 0.1);
+  glColor3f(0.6f, 0.3f, 0.1f);
   glPopMatrix();
 }
 //---------------------------------------------------------------------------
@@ -733,13 +748,41 @@ void desenhaPerna(int posicao)
 //---------------------------------------------------------------------------
 void desenhaEsfera()
 {
-  glColor3f(0.6, 0.5, 0.3);
+  glColor3f(0.6f, 0.3f, 0.1f);
   glutSolidSphere(TAMANHO_ESFERA, 8, 8);
-  glColor3f(1.0, 0.8, 0);
+  glColor3f(0.6f, 0.3f, 0.1f);
 }
 //---------------------------------------------------------------------------
+void ativarOrDesativarGeracaoDeCoordenadasDeTextura(bool ativar) {
+  if (ativar) {
+    glEnable(GL_TEXTURE_GEN_S);
+    glEnable(GL_TEXTURE_GEN_T);
+    return;
+  }
+  glDisable(GL_TEXTURE_GEN_S);
+  glDisable(GL_TEXTURE_GEN_T);
+}
+
 void desenhaCorpo()
 {
+  int sizeTexX,sizeTexY,comp;
+  unsigned char *imagemTextura = leTextura("cavalo.bmp", sizeTexX, sizeTexY, comp);
+  
+  glEnable(GL_TEXTURE_GEN_S);
+  glEnable(GL_TEXTURE_GEN_T);
+
+  glGenTextures(1, &idTextura);
+  glBindTexture(GL_TEXTURE_2D, idTextura);
+  gluBuild2DMipmaps(GL_TEXTURE_2D, 3, sizeTexX, sizeTexY, GL_RGB, GL_UNSIGNED_BYTE, imagemTextura);
+  
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+  glEnable(GL_TEXTURE_2D);
+  free(imagemTextura);
+
   desenhaTronco();
 
   glPushMatrix();
@@ -774,6 +817,11 @@ void desenhaCorpo()
   glTranslatef(-LARG_TRONCO * 0.28, ALT_TRONCO * 0.1, 0.0);
   desenhaRabo();
   glPopMatrix();
+
+  glDisable(GL_TEXTURE_GEN_S);
+  glDisable(GL_TEXTURE_GEN_T);
+  glDisable(GL_TEXTURE_2D);
+
 }
 //---------------------------------------------------------------------------
 void timer(int value)
