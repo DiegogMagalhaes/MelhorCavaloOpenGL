@@ -13,6 +13,7 @@
 #include <iostream>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include <cstring>
 
 #define ESCAPE 27
 #define TAMANHO_ESFERA 0.04
@@ -56,6 +57,7 @@
 int window;
 int Width;
 int Height;
+bool showHelp = true;
 
 #define QUADRIL 0
 #define FEMUR 1
@@ -100,22 +102,34 @@ void renderScene();
 void timer(int value);
 GLUquadricObj *params = gluNewQuadric();
 
-//CAMERA
-static GLfloat angle, fAspect,posX,posY, rotX, rotY, posZ, incrementZ;
+// CAMERA
+static GLfloat angle, fAspect, posX, posY, rotX, rotY, posZ, incrementZ;
+static const GLfloat initialAngle = 50;
+static const GLfloat initialPosX = 0;
+static const GLfloat initialPosY = 0;    // Ajuste a altura conforme necessário
+static const GLfloat initialPosZ = 4.0f; // Distância do cavalo
+static const GLfloat initialRotX = 20.0f;
+static const GLfloat initialRotY = 0.0f;
+
 static bool cameraLivre = false;
 
-//MOUSE CONTROL VAR
-enum MOUSE_HOLD_STATE {NO_BUTTON_HOLD, LEFT_BUTTON_HOLD, RIGHT_BUTTON_HOLD, MIDDLE_BUTTON_HOLD};
-static float lastX=0, lastY=0;
+// MOUSE CONTROL VAR
+enum MOUSE_HOLD_STATE
+{
+  NO_BUTTON_HOLD,
+  LEFT_BUTTON_HOLD,
+  RIGHT_BUTTON_HOLD,
+  MIDDLE_BUTTON_HOLD
+};
+static float lastX = 0, lastY = 0;
 static MOUSE_HOLD_STATE mouseHoldState = NO_BUTTON_HOLD;
 #define SENSITIVITY 0.5f;
 
-//TEXTURA
+// TEXTURA
 GLuint idTextura;
 unsigned char *imagemTextura;
 bool texturaAtivada = true;
 
-  
 //---------------------------------------------------------------------------
 void changeSize(int w, int h)
 {
@@ -126,15 +140,103 @@ void changeSize(int w, int h)
 
   Width = w;
   Height = h;
-  
+
   // Set the viewport to be the entire window
   glViewport(0, 0, w, h);
-  
+
   // Calculates aspect correction
   fAspect = (GLfloat)w / (GLfloat)h;
 
   especificaParametrosVisualizacao();
 }
+
+void resetCamera()
+{
+  posX = initialPosX;
+  posY = initialPosY;
+  posZ = initialPosZ;
+  rotX = initialRotX;
+  rotY = initialRotY;
+  especificaParametrosVisualizacao();
+  glutPostRedisplay(); // Solicita uma nova renderização
+}
+
+void Print_String(void *font, const char *string)
+{
+  int len = (int)strlen(string);
+  for (int i = 0; i < len; i++)
+  {
+    glutBitmapCharacter(font, string[i]);
+  }
+}
+
+void Print_Help(void)
+{
+  int fator = (int)(Height * 0.04);
+  int pos_esq = (int)(Width * 0.03) + fator; // margem esquerda da janela de ajuda
+  int altura = (int)(Height * 0.60) - fator; // altura inicial do primeiro item do menu de ajuda
+
+  glColor3f(1.0, 0.0, 0.0);
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_18, "HELP");
+  glColor3f(1.0, 1.0, 0.0);
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "'H' - MOSTRAR/ESCONDER  MENU (HELP)");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "<UP> - ZOOM IN/MOVER CAMERA PARA FRENTE");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "<DOWN> - ZOOM OUT/MOVER CAMERA PARA TRAS");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "<.>(PONTO) - MOVE CAVALO PARA ESQUERDA");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "<,>(VÍRGULA) - MOVE CAVALO PARA DIREITA");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "<LEFT> - ROTACIONA CAMERA PARA ESQUERDA");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "<RIGHT> - ROTACIONA CAMERA PARA DIREITA");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "'R' - RESETA CAMERA");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "'B' - MOVIMENTAR O CAVALO");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "'C' - ALTERNAR ENTRE CAMERA LIVRE E CAMERA DO CAVALO");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "'MOUSE WHEEL UP/DOWN' - ZOOM IN/OUT");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "'MOUSE CLICK + MOVIMENTO MOUSE' - MOVIMENTAR MUNDO");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "ESC - SAIR DO PROGRAMA");
+  glColor3f(1.0, 1.0, 1.0);
+}
+
+void setOrthographicProjection()
+{
+  // escolhe o modo de proje��o
+  glMatrixMode(GL_PROJECTION);
+
+  // salva os valores da matriz que cont�m os
+  // par�metros para a proje��o perspectiva
+  glPushMatrix();
+
+  // reset matriz
+  glLoadIdentity();
+
+  // seta os par�metros para proje��o 2D
+  gluOrtho2D(0, Width, 0, Height);
+
+  glMatrixMode(GL_MODELVIEW);
+}
+
+void resetPerspectiveProjection()
+{
+  // seta a matriz corrente para GL_PROJECTION
+  glMatrixMode(GL_PROJECTION);
+  // recupera as configura��es anteriores
+  glPopMatrix();
+  // seta a matriz corrente para GL_PROJECTION
+  glMatrixMode(GL_MODELVIEW);
+}
+
 //---------------------------------------------------------------------------
 void desenhaArvore()
 {
@@ -149,8 +251,8 @@ void desenhaArvore()
 void initScene()
 {
   glEnable(GL_DEPTH_TEST);
-  
-  //init cam values
+
+  // init cam values
   angle = 50;
   posX = 0;
   posY = 0;
@@ -159,6 +261,7 @@ void initScene()
   posZ = 4;
   incrementZ = 5;
 }
+
 //---------------------------------------------------------------------------
 void renderScene(void)
 {
@@ -166,14 +269,18 @@ void renderScene(void)
   int j;
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Limpe a tela e o buffer
 
-  GLfloat diffuseLight[] = {1, 1, 1, 1};
-  GLfloat ambientLight[] = {1, 1, 1, 1};
-  GLfloat specularLight[] = {0.2, 0.3, 0.3, 1};
+  if (showHelp)
+  {
+    Print_Help();
+  }
+  GLfloat diffuseLight[] = {1.0, 0.9, 0.5, 1.0};
+  GLfloat ambientLight[] = {0.5, 0.45, 0.25, 1.0};
+  GLfloat specularLight[] = {1.0, 0.9, 0.5, 1.0};
   GLfloat lightPos[] = {300.0f, 2000.0f, -20.0f, 1.0f};
-  GLfloat diffuseLight1[] = {1.0, 1.0, 1.0, 1.0};
-  GLfloat ambientLight1[] = {0.5, 0.5, 0.5, 1.0};
-  GLfloat specularLight1[] = {1.0, 1.0, 1.0, 1.0};
-  GLfloat lightPos1[] = {0.0f, -10.0f, 0.0f, 1.0f};
+  GLfloat diffuseLight1[] = {1.0, 0.9, 0.5, 1.0};
+  GLfloat ambientLight1[] = {0.5, 0.45, 0.25, 1.0};
+  GLfloat specularLight1[] = {1.0, 0.9, 0.5, 1.0};
+  GLfloat lightPos1[] = {xCavalo + 200.0, 1.0f, 0.0f, 1.0f};
   if (iluminacao)
     glEnable(GL_LIGHTING);
   else
@@ -189,8 +296,16 @@ void renderScene(void)
   glLightfv(GL_LIGHT1, GL_POSITION, lightPos1);
   glEnable(GL_LIGHT1);
   glEnable(GL_COLOR_MATERIAL);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, diffuseLight);
-  glMateriali(GL_FRONT_AND_BACK, GL_SHININESS, 50);
+
+  GLfloat matAmbient[] = {0.5, 0.45, 0.25, 1.0};
+  GLfloat matDiffuse[] = {1.0, 0.9, 0.5, 1.0};
+  GLfloat matSpecular[] = {1.0, 0.9, 0.5, 1.0};
+  GLfloat matShininess[] = {30.0};
+
+  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, matAmbient);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, matDiffuse);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, matSpecular);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, matShininess);
 
   // deseha ch�o
   glPushMatrix();
@@ -220,60 +335,79 @@ void renderScene(void)
   glRotatef(anguloCavalo, 0, 1, 0);
   desenhaCorpo();
   glPopMatrix();
+  if (showHelp)
+  {
+    setOrthographicProjection();
+    glPushMatrix();
+    glLoadIdentity();
+    Print_Help();
+    glPopMatrix();
+    resetPerspectiveProjection();
+  }
   glutSwapBuffers();
 }
 //---------------------------------------------------------------------------
 
-void moverCavalo(){
+void moverCavalo()
+{
   float maiorAngulo = caminhando ? 20.0 : 15.0;
-      if(anguloPescoco > maiorAngulo || anguloPescoco < 0.0)
-        anguloPescocoSubindo = !anguloPescocoSubindo;
-      float incremento = caminhando ? 1.5 : 3.0;
-      anguloPescoco = anguloPescocoSubindo ? anguloPescoco + incremento : anguloPescoco - incremento;
-      if(passo < 10) {
-        caminhando ? passo +=2 : passo +=3;
-        if(estagio==0 || estagio==2)
-          deslocamentoYTronco += 0.01;
-        else if(estagio==1 || estagio==3)
-          deslocamentoYTronco -= 0.01;
-      } else {
-        passo = 0;
-        int estagioFinal = 5;
-        if(!caminhando)
-          estagioFinal = 3;
-        if(estagio < estagioFinal)
-          estagio++;
-        else
-          estagio = 0;
-      }
-      if(movimentarCavalo){
-        float deslocamento = caminhando ? 0.03 : 0.12;
-        float anguloGraus = anguloCavalo*(M_PI/180);
-        xCavalo += deslocamento*cos(anguloGraus);
-        zCavalo -= deslocamento*sin(anguloGraus);
-        if(cameraLivre == false){
-          posX = -1*xCavalo;
-          posZ = incrementZ+zCavalo;
-          especificaParametrosVisualizacao();
-        }
-      }
+  if (anguloPescoco > maiorAngulo || anguloPescoco < 0.0)
+    anguloPescocoSubindo = !anguloPescocoSubindo;
+  float incremento = caminhando ? 1.5 : 3.0;
+  anguloPescoco = anguloPescocoSubindo ? anguloPescoco + incremento : anguloPescoco - incremento;
+  if (passo < 10)
+  {
+    caminhando ? passo += 2 : passo += 3;
+    if (estagio == 0 || estagio == 2)
+      deslocamentoYTronco += 0.01;
+    else if (estagio == 1 || estagio == 3)
+      deslocamentoYTronco -= 0.01;
+  }
+  else
+  {
+    passo = 0;
+    int estagioFinal = 5;
+    if (!caminhando)
+      estagioFinal = 3;
+    if (estagio < estagioFinal)
+      estagio++;
+    else
+      estagio = 0;
+  }
+  if (movimentarCavalo)
+  {
+    float deslocamento = caminhando ? 0.03 : 0.12;
+    float anguloGraus = anguloCavalo * (M_PI / 180);
+    xCavalo += deslocamento * cos(anguloGraus);
+    zCavalo -= deslocamento * sin(anguloGraus);
+    if (cameraLivre == false)
+    {
+      posX = -1 * xCavalo;
+      posZ = incrementZ + zCavalo;
+      especificaParametrosVisualizacao();
+    }
+  }
 }
 
-void switchCameraMode(bool mode){
-  if(cameraLivre == false){
-      angle = 50;
-      posX = xCavalo;
-      posY = 0;
-      rotX = 20;
-      rotY = 0;
-      posZ = 4;
-  }else{
-    rotX = 20;
-    rotY = 0;
-    incrementZ =5;
+void switchCameraMode(bool mode)
+{
+  if (cameraLivre == false)
+  {
+    angle = 50;
     posX = xCavalo;
     posY = 0;
-    posZ = incrementZ+zCavalo;
+    rotX = 20;
+    rotY = 0;
+    posZ = 4;
+  }
+  else
+  {
+    rotX = 20;
+    rotY = 0;
+    incrementZ = 5;
+    posX = xCavalo;
+    posY = 0;
+    posZ = incrementZ + zCavalo;
     angle = 50;
   }
   cameraLivre = mode;
@@ -283,15 +417,18 @@ void switchCameraMode(bool mode){
 void processNormalKeys(unsigned char key, int x, int y)
 {
 
- switch(key){
+  switch (key)
+  {
   case 27:
     exit(0);
     break;
-  case 'b': {
+  case 'b':
+  {
     moverCavalo();
     break;
   }
-  case 'B': {
+  case 'B':
+  {
     moverCavalo();
     break;
   }
@@ -307,171 +444,209 @@ void processNormalKeys(unsigned char key, int x, int y)
   case 'C':
     switchCameraMode(!cameraLivre);
     break;
+  case 'h':
+    showHelp = !showHelp;
+    break;
+  case 'H':
+    showHelp = !showHelp;
+    break;
+  case 'r':
+    resetCamera();
+    break;
   }
   renderScene();
 }
 //---------------------------------------------------------------------------
 void posicionaObservador(void)
 {
-    // Specifies projection coordinate system
-    glMatrixMode(GL_MODELVIEW);
-    // Initializes projection coordinate system
-    glLoadIdentity();
-    // Specifies camera position and rotation
-    glTranslatef(posX, posY, -posZ);
-    glRotatef(rotX, 1+fabs(posX), 0, 0);
-    glRotatef(rotY, 0, 1+fabs(posY), 0);
+  // Specifies projection coordinate system
+  glMatrixMode(GL_MODELVIEW);
+  // Initializes projection coordinate system
+  glLoadIdentity();
+  // Specifies camera position and rotation
+  glTranslatef(posX, posY, -posZ);
+  glRotatef(rotX, 1 + fabs(posX), 0, 0);
+  glRotatef(rotY, 0, 1 + fabs(posY), 0);
 }
 //---------------------------------------------------------------------------
 // Function used to specify the preview volume
 void especificaParametrosVisualizacao(void)
 {
-    // Specifies projection coordinate system
-    glMatrixMode(GL_PROJECTION);
-    // Initializes projection coordinate system
-    glLoadIdentity();
+  // Specifies projection coordinate system
+  glMatrixMode(GL_PROJECTION);
+  // Initializes projection coordinate system
+  glLoadIdentity();
 
-    // Specifies the perspective projection (angle, aspect, zMin, zMax)
-    gluPerspective(angle, fAspect, 0.5, 500);
-    posicionaObservador();
+  // Specifies the perspective projection (angle, aspect, zMin, zMax)
+  gluPerspective(angle, fAspect, 0.5, 500);
+  posicionaObservador();
 }
 
 //---------------------------------------------------------------------------
 void inputMouse(int button, int state, int x, int y)
-{   
-    if (button == GLUT_LEFT_BUTTON){
-        if (state == GLUT_DOWN)
-        { 
-          mouseHoldState = LEFT_BUTTON_HOLD;
-        }
+{
+  if (button == GLUT_LEFT_BUTTON)
+  {
+    if (state == GLUT_DOWN)
+    {
+      mouseHoldState = LEFT_BUTTON_HOLD;
     }
-    else if (button == GLUT_RIGHT_BUTTON){
-        if (state == GLUT_DOWN)
-        { 
-          mouseHoldState = RIGHT_BUTTON_HOLD;
-        }
+  }
+  else if (button == GLUT_RIGHT_BUTTON)
+  {
+    if (state == GLUT_DOWN)
+    {
+      mouseHoldState = RIGHT_BUTTON_HOLD;
     }
-    else if (button == GLUT_MIDDLE_BUTTON){
-        if (state == GLUT_DOWN)
-        { 
-          mouseHoldState = MIDDLE_BUTTON_HOLD;
-        }
+  }
+  else if (button == GLUT_MIDDLE_BUTTON)
+  {
+    if (state == GLUT_DOWN)
+    {
+      mouseHoldState = MIDDLE_BUTTON_HOLD;
     }
-    else{
-      mouseHoldState = NO_BUTTON_HOLD;
-    }
+  }
+  else
+  {
+    mouseHoldState = NO_BUTTON_HOLD;
+  }
 
-    //Mouse scroll, up and down
-    if (button == 3){
-        if (state == GLUT_DOWN)
-        { 
-          posZ--;
-          if(cameraLivre == false){
-            incrementZ--;  
-          }
-        }
+  // Mouse scroll, up and down
+  if (button == 3)
+  {
+    if (state == GLUT_DOWN)
+    {
+      posZ--;
+      if (cameraLivre == false)
+      {
+        incrementZ--;
+      }
     }
-    if (button == 4){
-        if (state == GLUT_DOWN)
-        { 
-          posZ++;
-          if(cameraLivre == false){
-            incrementZ++;  
-          }
-        }
+  }
+  if (button == 4)
+  {
+    if (state == GLUT_DOWN)
+    {
+      posZ++;
+      if (cameraLivre == false)
+      {
+        incrementZ++;
+      }
     }
+  }
 
-    especificaParametrosVisualizacao();
-    glutPostRedisplay();
+  especificaParametrosVisualizacao();
+  glutPostRedisplay();
 }
 //---------------------------------------------------------------------------
-void inputKey(int key, int x, int y) {
+void inputKey(int key, int x, int y)
+{
 
-  switch (key) {
-    case GLUT_KEY_UP:
-      // Zoom-in
-      if (angle >= 10) angle -= 5;
-      break;
-    case GLUT_KEY_DOWN:
-      // Zoom-out
-      if (angle <= 130) angle += 5;
-      break;
-    case GLUT_KEY_F1:
-      deslocamentoYTronco = 0.0;
-      caminhando = !caminhando;
-      break;
-    case GLUT_KEY_F5:
-      glutFullScreen ( );
-      break;
-    case GLUT_KEY_F6:
-      glutReshapeWindow ( 640, 360 );
-      break;
-    case GLUT_KEY_F7:
-      iluminacao = !iluminacao;
-      break;
-    case GLUT_KEY_F8:
-      arvores = !arvores;
-      break;
-    case GLUT_KEY_F11:
-      movimentarCavalo = !movimentarCavalo;
-      break;
+  switch (key)
+  {
+  case GLUT_KEY_LEFT:
+    rotY -= 3;
+    break;
+  case GLUT_KEY_RIGHT:
+    rotY += 3;
+    break;
+  case GLUT_KEY_UP:
+    // Zoom-in
+    if (angle >= 10)
+      angle -= 5;
+    break;
+  case GLUT_KEY_DOWN:
+    // Zoom-out
+    if (angle <= 130)
+      angle += 5;
+    break;
+  case GLUT_KEY_F1:
+    deslocamentoYTronco = 0.0;
+    caminhando = !caminhando;
+    break;
+  case GLUT_KEY_F5:
+    glutFullScreen();
+    break;
+  case GLUT_KEY_F6:
+    glutReshapeWindow(640, 360);
+    break;
+  case GLUT_KEY_F7:
+    iluminacao = !iluminacao;
+    break;
+  case GLUT_KEY_F8:
+    arvores = !arvores;
+    break;
+  case GLUT_KEY_F11:
+    movimentarCavalo = !movimentarCavalo;
+    break;
   }
   especificaParametrosVisualizacao();
   glutPostRedisplay();
 }
 //---------------------------------------------------------------------------
-void mouseMotion(int x, int y) {
+void mouseMotion(int x, int y)
+{
 
   float xoffset = x - lastX;
-  float yoffset = lastY - y;  
-    
+  float yoffset = lastY - y;
+
   lastX = x;
   lastY = y;
 
-  //When the middle mouse button is pressing, move the camera in X and Y 
-  if(mouseHoldState == MIDDLE_BUTTON_HOLD && cameraLivre == true){
-    if(xoffset< 0){
+  // When the middle mouse button is pressing, move the camera in X and Y
+  if (mouseHoldState == MIDDLE_BUTTON_HOLD && cameraLivre == true)
+  {
+    if (xoffset < 0)
+    {
       posX -= SENSITIVITY;
     }
-    else if(xoffset>0){
+    else if (xoffset > 0)
+    {
       posX += SENSITIVITY;
     }
-    if(yoffset < 0){
+    if (yoffset < 0)
+    {
       posY -= SENSITIVITY;
     }
-    else if(yoffset > 0){
+    else if (yoffset > 0)
+    {
       posY += SENSITIVITY;
     }
   }
 
-  //When the left mouse button is pressing, rotate the camera in X and Y
-  if(mouseHoldState == LEFT_BUTTON_HOLD){
-      
+  // When the left mouse button is pressing, rotate the camera in X and Y
+  if (mouseHoldState == LEFT_BUTTON_HOLD)
+  {
 
-    if(xoffset< 0){
-      rotY += 4*SENSITIVITY;
+    if (xoffset < 0)
+    {
+      rotY += 4 * SENSITIVITY;
     }
-    else if(xoffset>0){
-      rotY -= 4*SENSITIVITY;
+    else if (xoffset > 0)
+    {
+      rotY -= 4 * SENSITIVITY;
     }
-    if(yoffset < 0){
-      rotX += 4*SENSITIVITY;
+    if (yoffset < 0)
+    {
+      rotX += 4 * SENSITIVITY;
     }
-    else if(yoffset > 0){
-      rotX -= 4*SENSITIVITY;
+    else if (yoffset > 0)
+    {
+      rotX -= 4 * SENSITIVITY;
     }
   }
-            
-    posicionaObservador();
-    glutPostRedisplay();
+
+  posicionaObservador();
+  glutPostRedisplay();
 }
 //---------------------------------------------------------------------------
 unsigned char *leTextura(char *filename, int &width, int &height, int &channels)
 {
-    unsigned char *img_data = stbi_load(filename, &width, &height, &channels, 3);
+  unsigned char *img_data = stbi_load(filename, &width, &height, &channels, 3);
 
-    return img_data;
+  return img_data;
 }
+
 //---------------------------------------------------------------------------
 int main(int argc, char **argv)
 {
@@ -484,7 +659,7 @@ int main(int argc, char **argv)
   glutInitWindowPosition(100, 100);
   glutInitWindowSize(640, 360);
   glutCreateWindow("Trabalho de computa��o gr�fica");
-  
+
   initScene();
 
   glutKeyboardFunc(processNormalKeys);
@@ -792,8 +967,10 @@ void desenhaEsfera()
   glColor3f(0.6f, 0.3f, 0.1f);
 }
 //---------------------------------------------------------------------------
-void ativarOrDesativarGeracaoDeCoordenadasDeTextura(bool ativar) {
-  if (ativar) {
+void ativarOrDesativarGeracaoDeCoordenadasDeTextura(bool ativar)
+{
+  if (ativar)
+  {
     glEnable(GL_TEXTURE_GEN_S);
     glEnable(GL_TEXTURE_GEN_T);
     return;
@@ -804,20 +981,20 @@ void ativarOrDesativarGeracaoDeCoordenadasDeTextura(bool ativar) {
 
 void desenhaCorpo()
 {
-  int sizeTexX,sizeTexY,comp;
+  int sizeTexX, sizeTexY, comp;
   unsigned char *imagemTextura = leTextura("cavalo.bmp", sizeTexX, sizeTexY, comp);
-  
+
   glEnable(GL_TEXTURE_GEN_S);
   glEnable(GL_TEXTURE_GEN_T);
 
   glGenTextures(1, &idTextura);
   glBindTexture(GL_TEXTURE_2D, idTextura);
   gluBuild2DMipmaps(GL_TEXTURE_2D, 3, sizeTexX, sizeTexY, GL_RGB, GL_UNSIGNED_BYTE, imagemTextura);
-  
+
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_LINEAR);
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
   glEnable(GL_TEXTURE_2D);
   free(imagemTextura);
@@ -860,7 +1037,6 @@ void desenhaCorpo()
   glDisable(GL_TEXTURE_GEN_S);
   glDisable(GL_TEXTURE_GEN_T);
   glDisable(GL_TEXTURE_2D);
-
 }
 //---------------------------------------------------------------------------
 void timer(int value)
