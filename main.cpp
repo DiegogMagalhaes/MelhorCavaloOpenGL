@@ -104,7 +104,7 @@ static GLfloat angle, fAspect,posX,posY, rotX, rotY, posZ;
 enum MOUSE_HOLD_STATE {NO_BUTTON_HOLD, LEFT_BUTTON_HOLD, RIGHT_BUTTON_HOLD, MIDDLE_BUTTON_HOLD};
 static float lastX=0, lastY=0;
 static MOUSE_HOLD_STATE mouseHoldState = NO_BUTTON_HOLD;
-#define SENSITIVITY 0.1f;
+#define SENSITIVITY 0.3f;
 
   
 //---------------------------------------------------------------------------
@@ -399,15 +399,8 @@ void mouseMotion(int x, int y) {
 
   //When the left mouse button is pressing, rotate the camera in X and Y
   if(mouseHoldState == LEFT_BUTTON_HOLD){
-    float modY = 1;
-    float modX = 1;
-    if(fabs(xoffset)>fabs(xoffset)){
-      modX = 10;
-    }
-    else{
-      modY = 10;
-    }
-    
+      
+
     if(xoffset< 0){
       rotY += 5*SENSITIVITY;
     }
