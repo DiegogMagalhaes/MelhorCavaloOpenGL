@@ -104,7 +104,7 @@ static GLfloat angle, fAspect,posX,posY, rotX, rotY, posZ;
 enum MOUSE_HOLD_STATE {NO_BUTTON_HOLD, LEFT_BUTTON_HOLD, RIGHT_BUTTON_HOLD, MIDDLE_BUTTON_HOLD};
 static float lastX=0, lastY=0;
 static MOUSE_HOLD_STATE mouseHoldState = NO_BUTTON_HOLD;
-#define SENSITIVITY 0.3f;
+#define SENSITIVITY 0.5f;
 
   
 //---------------------------------------------------------------------------
@@ -402,16 +402,16 @@ void mouseMotion(int x, int y) {
       
 
     if(xoffset< 0){
-      rotY += 5*SENSITIVITY;
+      rotY += 4*SENSITIVITY;
     }
     else if(xoffset>0){
-      rotY -= 5*SENSITIVITY;
+      rotY -= 4*SENSITIVITY;
     }
     if(yoffset < 0){
-      rotX += 5*SENSITIVITY;
+      rotX += 4*SENSITIVITY;
     }
     else if(yoffset > 0){
-      rotX -= 5*SENSITIVITY;
+      rotX -= 4*SENSITIVITY;
     }
   }
             
