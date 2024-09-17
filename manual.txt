@@ -8,8 +8,10 @@ Grupo Original: Daniel Carlos Casarotto
 
 Teclas:
 
+C- Ativa e Desativa o modo de camera livre. Enquanto a camera não for livre, a camera seguira o cavalo
+
 Segurar Botão esquerdo do mouse e move-lo - rotacionar camera
-Segurar Botão do meio do mouse e move-lo - mover em x e y
+Segurar Botão do meio do mouse e move-lo - mover em x e y(Só funciona durante o modo de camera livre)
 Segurar Scrollar mouse - mover em z
 seta para cima - zoom-in
 seta para baixo - zoom-out

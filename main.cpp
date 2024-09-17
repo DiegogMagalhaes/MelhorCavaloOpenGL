@@ -101,7 +101,8 @@ void timer(int value);
 GLUquadricObj *params = gluNewQuadric();
 
 //CAMERA
-static GLfloat angle, fAspect,posX,posY, rotX, rotY, posZ;
+static GLfloat angle, fAspect,posX,posY, rotX, rotY, posZ, incrementZ;
+static bool cameraLivre = false;
 
 //MOUSE CONTROL VAR
 enum MOUSE_HOLD_STATE {NO_BUTTON_HOLD, LEFT_BUTTON_HOLD, RIGHT_BUTTON_HOLD, MIDDLE_BUTTON_HOLD};
@@ -156,11 +157,11 @@ void initScene()
   rotX = 20;
   rotY = 0;
   posZ = 4;
+  incrementZ = 5;
 }
 //---------------------------------------------------------------------------
 void renderScene(void)
 {
-
   int i;
   int j;
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Limpe a tela e o buffer
@@ -250,7 +251,33 @@ void moverCavalo(){
         float anguloGraus = anguloCavalo*(M_PI/180);
         xCavalo += deslocamento*cos(anguloGraus);
         zCavalo -= deslocamento*sin(anguloGraus);
+        if(cameraLivre == false){
+          posX = -1*xCavalo;
+          posZ = incrementZ+zCavalo;
+          especificaParametrosVisualizacao();
+        }
       }
+}
+
+void switchCameraMode(bool mode){
+  if(cameraLivre == false){
+      angle = 50;
+      posX = xCavalo;
+      posY = 0;
+      rotX = 20;
+      rotY = 0;
+      posZ = 4;
+  }else{
+    rotX = 20;
+    rotY = 0;
+    incrementZ =5;
+    posX = xCavalo;
+    posY = 0;
+    posZ = incrementZ+zCavalo;
+    angle = 50;
+  }
+  cameraLivre = mode;
+  posicionaObservador();
 }
 //---------------------------------------------------------------------------
 void processNormalKeys(unsigned char key, int x, int y)
@@ -273,6 +300,12 @@ void processNormalKeys(unsigned char key, int x, int y)
     break;
   case '.':
     anguloCavalo -= 5;
+    break;
+  case 'c':
+    switchCameraMode(!cameraLivre);
+    break;
+  case 'C':
+    switchCameraMode(!cameraLivre);
     break;
   }
   renderScene();
@@ -333,12 +366,18 @@ void inputMouse(int button, int state, int x, int y)
         if (state == GLUT_DOWN)
         { 
           posZ--;
+          if(cameraLivre == false){
+            incrementZ--;  
+          }
         }
     }
     if (button == 4){
         if (state == GLUT_DOWN)
         { 
           posZ++;
+          if(cameraLivre == false){
+            incrementZ++;  
+          }
         }
     }
 
@@ -390,7 +429,7 @@ void mouseMotion(int x, int y) {
   lastY = y;
 
   //When the middle mouse button is pressing, move the camera in X and Y 
-  if(mouseHoldState == MIDDLE_BUTTON_HOLD){
+  if(mouseHoldState == MIDDLE_BUTTON_HOLD && cameraLivre == true){
     if(xoffset< 0){
       posX -= SENSITIVITY;
     }
