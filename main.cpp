@@ -15,6 +15,7 @@
 #include "stb_image.h"
 #include <cstring>
 
+// As constantes a seguir especificam dimensionamento e posicionamento de partes do cavalo
 #define ESCAPE 27
 #define TAMANHO_ESFERA 0.04
 
@@ -54,16 +55,23 @@
 #define ESQUERDA_POSTERIOR 2
 #define DIREITA_POSTERIOR 3
 
-int window;
-int Width;
-int Height;
-bool showHelp = true;
-
 #define QUADRIL 0
 #define FEMUR 1
 #define CANELA 2
 #define PATA 3
-// angulos[estagio][posicao][quadril/femur/canela/pata]
+
+// As variáveis a seguir
+
+int window; // identificador da janela
+// largura e altura da janela
+int Width;
+int Height;
+
+bool showHelp = true; // Mostrar ajuda
+
+// variaveis para controle de animação e estado do cavalo
+
+//  angulos[estagio][posicao][quadril/femur/canela/pata]
 float angulosCaminhada[6][4][4];
 float angulosTrote[6][4][4];
 float anguloCabeca;
@@ -106,8 +114,8 @@ GLUquadricObj *params = gluNewQuadric();
 static GLfloat angle, fAspect, posX, posY, rotX, rotY, posZ, incrementZ;
 static const GLfloat initialAngle = 50;
 static const GLfloat initialPosX = 0;
-static const GLfloat initialPosY = 0;    // Ajuste a altura conforme necessário
-static const GLfloat initialPosZ = 4.0f; // Distância do cavalo
+static const GLfloat initialPosY = 0;
+static const GLfloat initialPosZ = 4.0f;
 static const GLfloat initialRotX = 20.0f;
 static const GLfloat initialRotY = 0.0f;
 
@@ -131,36 +139,53 @@ unsigned char *imagemTextura;
 bool texturaAtivada = true;
 
 //---------------------------------------------------------------------------
+
+/**
+ * @brief Função para redimensionamento da janela.
+ *
+ * Ajusta a viewport para corresponder ao novo tamanho da janela e recalcula
+ * a correção de aspecto para garantir que a cena seja renderizada corretamente.
+ *
+ * @param w A nova largura da janela.
+ * @param h A nova altura da janela.
+ *
+ * @details
+ * - Se a altura da janela (`h`) for 0, ela é ajustada para 1 para evitar uma divisão por zero.
+ * - A função define a viewport para cobrir toda a janela.
+ * - A correção de aspecto (`fAspect`) é recalculada com base na nova largura e altura.
+ * - A função `especificaParametrosVisualizacao` é chamada para atualizar os parâmetros de visualização.
+ *
+ */
 void changeSize(int w, int h)
 {
-  // Prevent a divide by zero, when window is too short
-  // (you cant make a window of zero width).
+  // prevê uma divisão por 0 se a janela for pequena demais
   if (h == 0)
     h = 1;
 
   Width = w;
   Height = h;
+  glViewport(0, 0, w, h); // especifica a viewport para a janela inteira
 
-  // Set the viewport to be the entire window
-  glViewport(0, 0, w, h);
-
-  // Calculates aspect correction
+  // calcula a correção de aspecto
   fAspect = (GLfloat)w / (GLfloat)h;
 
   especificaParametrosVisualizacao();
 }
 
-void resetCamera()
-{
-  posX = initialPosX;
-  posY = initialPosY;
-  posZ = initialPosZ;
-  rotX = initialRotX;
-  rotY = initialRotY;
-  especificaParametrosVisualizacao();
-  glutPostRedisplay(); // Solicita uma nova renderização
-}
-
+/**
+ * @brief Desenha uma string na tela usando uma fonte bitmap.
+ *
+ * Esta função desenha uma string na tela na posição atual do raster usando a fonte bitmap especificada.
+ * É útil para exibir texto na janela de renderização, como mensagens de ajuda, informações de depuração ou outros textos.
+ *
+ * @param font Ponteiro para a fonte bitmap a ser usada. Pode ser uma das fontes bitmap fornecidas pelo GLUT, como `GLUT_BITMAP_HELVETICA_18`.
+ * @param string Ponteiro para a string de caracteres a ser desenhada. A string deve ser terminada por null (`\0`).
+ *
+ * @details
+ * - A função calcula o comprimento da string usando `strlen`.
+ * - Em seguida, desenha cada caractere da string na posição atual do raster usando `glutBitmapCharacter`.
+ * - A posição do raster deve ser definida antes de chamar esta função, usando `glRasterPos`.
+ */
 void Print_String(void *font, const char *string)
 {
   int len = (int)strlen(string);
@@ -170,6 +195,18 @@ void Print_String(void *font, const char *string)
   }
 }
 
+/**
+ * @brief Desenha a tela de ajuda na janela de renderização.
+ *
+ * Esta função desenha uma tela de ajuda na janela de renderização, exibindo informações úteis para o usuário.
+ * A tela de ajuda inclui um título "HELP" e pode incluir outras instruções ou informações.
+ *
+ * @details
+ * - A função calcula a posição inicial para desenhar o texto de ajuda com base na largura e altura da janela.
+ * - Define a cor do texto para vermelho para o título "HELP" e amarelo para o restante do texto.
+ * - Usa `glRasterPos2i` para definir a posição do raster e `Print_String` para desenhar o texto.
+ * - A posição do texto é ajustada verticalmente para cada linha de texto desenhada.
+ */
 void Print_Help(void)
 {
   int fator = (int)(Height * 0.04);
@@ -183,9 +220,9 @@ void Print_Help(void)
   glRasterPos2i(pos_esq, altura -= fator);
   Print_String(GLUT_BITMAP_HELVETICA_12, "'H' - MOSTRAR/ESCONDER  MENU (HELP)");
   glRasterPos2i(pos_esq, altura -= fator);
-  Print_String(GLUT_BITMAP_HELVETICA_12, "<UP> - ZOOM IN/MOVER CAMERA PARA FRENTE");
+  Print_String(GLUT_BITMAP_HELVETICA_12, "<UP> - ZOOM IN");
   glRasterPos2i(pos_esq, altura -= fator);
-  Print_String(GLUT_BITMAP_HELVETICA_12, "<DOWN> - ZOOM OUT/MOVER CAMERA PARA TRAS");
+  Print_String(GLUT_BITMAP_HELVETICA_12, "<DOWN> - ZOOM OUT");
   glRasterPos2i(pos_esq, altura -= fator);
   Print_String(GLUT_BITMAP_HELVETICA_12, "<.>(PONTO) - MOVE CAVALO PARA ESQUERDA");
   glRasterPos2i(pos_esq, altura -= fator);
@@ -195,13 +232,11 @@ void Print_Help(void)
   glRasterPos2i(pos_esq, altura -= fator);
   Print_String(GLUT_BITMAP_HELVETICA_12, "<RIGHT> - ROTACIONA CAMERA PARA DIREITA");
   glRasterPos2i(pos_esq, altura -= fator);
-  Print_String(GLUT_BITMAP_HELVETICA_12, "'R' - RESETA CAMERA");
+  Print_String(GLUT_BITMAP_HELVETICA_12, "<W> - INCLINA CAMERA PARA CIMA");
+  glRasterPos2i(pos_esq, altura -= fator);
+  Print_String(GLUT_BITMAP_HELVETICA_12, "<S> - INCLINA CAMERA PARA BAIXO");
   glRasterPos2i(pos_esq, altura -= fator);
   Print_String(GLUT_BITMAP_HELVETICA_12, "'B' - MOVIMENTAR O CAVALO");
-  glRasterPos2i(pos_esq, altura -= fator);
-  Print_String(GLUT_BITMAP_HELVETICA_12, "'C' - ALTERNAR ENTRE CAMERA LIVRE E CAMERA DO CAVALO");
-  glRasterPos2i(pos_esq, altura -= fator);
-  Print_String(GLUT_BITMAP_HELVETICA_12, "'MOUSE WHEEL UP/DOWN' - ZOOM IN/OUT");
   glRasterPos2i(pos_esq, altura -= fator);
   Print_String(GLUT_BITMAP_HELVETICA_12, "'MOUSE CLICK + MOVIMENTO MOUSE' - MOVIMENTAR MUNDO");
   glRasterPos2i(pos_esq, altura -= fator);
@@ -209,13 +244,29 @@ void Print_Help(void)
   glColor3f(1.0, 1.0, 1.0);
 }
 
+/**
+ * @brief Configura a projeção ortográfica para renderização 2D.
+ *
+ * Esta função configura a projeção ortográfica para renderização 2D, útil para desenhar elementos de interface de usuário
+ * ou texto na tela. Ela salva a matriz de projeção atual, redefine a matriz de projeção e define uma nova projeção ortográfica.
+ *
+ * @details
+ * - A função muda o modo de matriz para `GL_PROJECTION`.
+ * - Salva a matriz de projeção atual usando `glPushMatrix`.
+ * - Reseta a matriz de projeção com `glLoadIdentity`.
+ * - Define uma projeção ortográfica 2D com `gluOrtho2D`, usando a largura e altura da janela.
+ * - Muda o modo de matriz de volta para `GL_MODELVIEW`.
+ *
+ * @note
+ * Após chamar esta função, a projeção será ortográfica até que `resetPerspectiveProjection` seja chamada para restaurar a projeção perspectiva.
+ */
 void setOrthographicProjection()
 {
-  // escolhe o modo de proje��o
+  // escolhe o modo de projeção
   glMatrixMode(GL_PROJECTION);
 
-  // salva os valores da matriz que cont�m os
-  // par�metros para a proje��o perspectiva
+  // salva os valores da matriz que contém os
+  // parâmetros para a projeção perspectiva
   glPushMatrix();
 
   // reset matriz
@@ -227,6 +278,20 @@ void setOrthographicProjection()
   glMatrixMode(GL_MODELVIEW);
 }
 
+/**
+ * @brief Restaura a projeção perspectiva após uma projeção ortográfica.
+ *
+ * Esta função restaura a projeção perspectiva que estava em uso antes de uma projeção ortográfica ser definida.
+ * É usada em conjunto com `setOrthographicProjection` para alternar entre projeções ortográfica e perspectiva.
+ *
+ * @details
+ * - A função define a matriz corrente para `GL_PROJECTION`.
+ * - Recupera a matriz de projeção perspectiva previamente salva usando `glPopMatrix`.
+ * - Define a matriz corrente de volta para `GL_MODELVIEW`.
+ *
+ * @note
+ * Esta função deve ser chamada após `setOrthographicProjection` para restaurar a projeção perspectiva.
+ */
 void resetPerspectiveProjection()
 {
   // seta a matriz corrente para GL_PROJECTION
@@ -237,7 +302,24 @@ void resetPerspectiveProjection()
   glMatrixMode(GL_MODELVIEW);
 }
 
-//---------------------------------------------------------------------------
+/**
+ * @brief Desenha uma árvore no ambiente 3D.
+ *
+ * Esta função desenha uma árvore composta por um tronco e uma copa no ambiente 3D.
+ * O tronco é representado por um cilindro marrom e a copa por um cone verde.
+ *
+ * @details
+ * - A função define a cor do tronco para marrom usando `glColor3f`.
+ * - Rotaciona o cilindro para que ele fique na posição vertical usando `glRotatef`.
+ * - Desenha o tronco da árvore usando `gluCylinder`.
+ * - Translada a posição para o topo do tronco usando `glTranslatef`.
+ * - Define a cor da copa para verde usando `glColor3f`.
+ * - Desenha a copa da árvore usando `gluCylinder` com o topo reduzido a zero para formar um cone.
+ *
+ * @note
+ * A função assume que a matriz de modelagem está corretamente configurada antes de ser chamada.
+ * A função `gluCylinder` requer um objeto `GLUquadric` previamente criado e configurado.
+ */
 void desenhaArvore()
 {
   glColor3f(0.54, 0.4, 0.3);
@@ -247,7 +329,27 @@ void desenhaArvore()
   glColor3f(0.14, 0.42, 0.13);
   gluCylinder(params, 0.8, 0.0, 2, 15, 2);
 }
-//---------------------------------------------------------------------------
+
+/**
+ * @brief Inicializa a cena 3D e configura os parâmetros iniciais da câmera.
+ *
+ * Esta função é chamada uma vez no início da execução do programa para configurar
+ * os parâmetros iniciais da cena 3D, incluindo a habilitação do teste de profundidade
+ * e a inicialização dos valores da câmera.
+ *
+ * @details
+ * - Habilita o teste de profundidade usando `glEnable(GL_DEPTH_TEST)`, o que permite
+ *   que objetos sejam renderizados corretamente com base em suas distâncias da câmera.
+ * - Inicializa os valores da câmera, incluindo ângulo, posição e rotação.
+ *   - `angle`: Define o ângulo de visão inicial.
+ *   - `posX`, `posY`, `posZ`: Definem a posição inicial da câmera no espaço 3D.
+ *   - `rotX`, `rotY`: Definem a rotação inicial da câmera em torno dos eixos X e Y.
+ *   - `incrementZ`: Define o incremento de movimento ao longo do eixo Z.
+ *
+ * @note
+ * Esta função deve ser chamada antes de qualquer renderização para garantir que
+ * os parâmetros da cena e da câmera estejam corretamente configurados.
+ */
 void initScene()
 {
   glEnable(GL_DEPTH_TEST);
@@ -262,12 +364,42 @@ void initScene()
   incrementZ = 5;
 }
 
-//---------------------------------------------------------------------------
+/**
+ * @brief Renderiza a cena 3D.
+ *
+ * Esta função é responsável por configurar a iluminação, materiais e desenhar os objetos na cena.
+ *
+ * @details
+ * - Configura duas fontes de luz (`GL_LIGHT0` e `GL_LIGHT1`) com componentes ambiente, difusa e especular.
+ * - Define as propriedades do material para os objetos na cena.
+ * - Desenha um plano representando o chão.
+ */
+
+void updateCameraPosition()
+{
+  float cameraDistance = 3.5; // Distância desejada da câmera ao cavalo
+  float cameraHeight = 0;     // Altura da câmera em relação ao cavalo
+
+  // Calcular a nova posição da câmera
+  float cameraX = xCavalo - cameraDistance * cos(rotY * M_PI / 180.0f);
+  float cameraY = cameraHeight + cameraDistance * sin(rotX * M_PI / 180.0f);
+  float cameraZ = zCavalo - cameraDistance * sin(rotY * M_PI / 180.0f);
+
+  // Atualizar a posição da câmera
+  if (!cameraLivre)
+  {
+    gluLookAt(cameraX, cameraY, cameraZ, xCavalo, 0, zCavalo, 0.0f, 1.0f, 0.0f);
+  }
+}
 void renderScene(void)
 {
   int i;
   int j;
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Limpe a tela e o buffer
+  glLoadIdentity();
+
+  if (cameraLivre == false)
+    updateCameraPosition();
 
   if (showHelp)
   {
@@ -346,8 +478,22 @@ void renderScene(void)
   }
   glutSwapBuffers();
 }
-//---------------------------------------------------------------------------
 
+/**
+ * @brief Atualiza a posição e a animação do cavalo.
+ *
+ * Esta função é responsável por atualizar os ângulos e deslocamentos do cavalo
+ * para simular o movimento de caminhada ou corrida. Ela ajusta o ângulo do pescoço,
+ * o deslocamento vertical do tronco e o estágio da animação.
+ *
+ * @details
+ * - O ângulo do pescoço (`anguloPescoco`) é ajustado com base em um incremento,
+ *   que depende se o cavalo está caminhando ou correndo.
+ * - O deslocamento vertical do tronco (`deslocamentoYTronco`) é ajustado para simular
+ *   o movimento de subida e descida durante a caminhada.
+ * - O estágio da animação (`estagio`) é atualizado para controlar a sequência de movimentos.
+ *
+ */
 void moverCavalo()
 {
   float maiorAngulo = caminhando ? 20.0 : 15.0;
@@ -384,10 +530,27 @@ void moverCavalo()
     {
       posX = -1 * xCavalo;
       posZ = incrementZ + zCavalo;
+      posY = 0;
       especificaParametrosVisualizacao();
     }
   }
 }
+
+/**
+ * @brief Alterna entre os modos de câmera livre e fixa.
+ *
+ * Esta função alterna a configuração da câmera entre os modos livre e fixa.
+ * No modo livre, a câmera acompanha o cavalo, enquanto no modo fixa, a câmera
+ * permanece em uma posição fixa.
+ *
+ * @param mode Um valor booleano que indica o modo da câmera. Será usado com a variável global `cameraLivre` para indicar o modo.
+ *
+ * @details
+ * - No modo fixa (`cameraLivre == false`), a câmera é posicionada com um ângulo de visão
+ *   de 50 graus, e a posição da câmera é definida com base na posição do cavalo.
+ * - No modo livre (`cameraLivre == true`), a rotação da câmera é ajustada para 20 graus
+ *   no eixo X e 0 graus no eixo Y.
+ */
 
 void switchCameraMode(bool mode)
 {
@@ -432,6 +595,21 @@ void processNormalKeys(unsigned char key, int x, int y)
     moverCavalo();
     break;
   }
+  case 'w':
+  case 'W':
+    if (rotX < 90)
+    {
+      rotX += 2;
+      break;
+    }
+
+  case 's':
+  case 'S':
+    if (rotX > 9)
+    {
+      rotX -= 2;
+    }
+    break;
   case ',':
     anguloCavalo += 5;
     break;
@@ -450,9 +628,6 @@ void processNormalKeys(unsigned char key, int x, int y)
   case 'H':
     showHelp = !showHelp;
     break;
-  case 'r':
-    resetCamera();
-    break;
   }
   renderScene();
 }
@@ -467,6 +642,8 @@ void posicionaObservador(void)
   glTranslatef(posX, posY, -posZ);
   glRotatef(rotX, 1 + fabs(posX), 0, 0);
   glRotatef(rotY, 0, 1 + fabs(posY), 0);
+  if (cameraLivre == false)
+    gluLookAt(posX, posY, posZ, xCavalo, 0, zCavalo, 0.0f, 1.0f, 0.0f);
 }
 //---------------------------------------------------------------------------
 // Function used to specify the preview volume
