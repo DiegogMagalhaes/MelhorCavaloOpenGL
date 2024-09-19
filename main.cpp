@@ -111,7 +111,7 @@ void timer(int value);
 GLUquadricObj *params = gluNewQuadric();
 
 // CAMERA
-static GLfloat angle, fAspect, posX, posY, rotX, rotY, posZ, incrementZ;
+static GLfloat angle, fAspect, posX, posY, rotX, rotY, posZ;
 static const GLfloat initialAngle = 50;
 static const GLfloat initialPosX = 0;
 static const GLfloat initialPosY = 0;
@@ -380,7 +380,6 @@ void initScene()
   rotX = 20;
   rotY = 0;
   posZ = 4;
-  incrementZ = 5;
 }
 
 /**
@@ -549,7 +548,7 @@ void moverCavalo()
     if (cameraLivre == false)
     {
       posX = -1 * xCavalo;
-      posZ = incrementZ + zCavalo;
+      posZ = zCavalo;
       posY = 0;
       especificaParametrosVisualizacao();
     }
@@ -560,8 +559,8 @@ void moverCavalo()
  * @brief Alterna entre os modos de câmera livre e fixa.
  *
  * Esta função alterna a configuração da câmera entre os modos livre e fixa.
- * No modo livre, a câmera acompanha o cavalo, enquanto no modo fixa, a câmera
- * permanece em uma posição fixa.
+ * No modo livre, a câmera pode-se mover livremente, enquanto no modo fixa, 
+ * a câmera permanece em uma posição fixa.
  *
  * @param mode Um valor booleano que indica o modo da câmera. Será usado com a variável global `cameraLivre` para indicar o modo.
  *
@@ -588,10 +587,9 @@ void switchCameraMode(bool mode)
     angle = 50;
     rotX = 20;
     rotY = 0;
-    incrementZ = 5;
     posX = xCavalo;
     posY = 0;
-    posZ = incrementZ + zCavalo;
+    posZ = zCavalo;
   }
   cameraLivre = mode;
   especificaParametrosVisualizacao();
@@ -651,30 +649,45 @@ void processNormalKeys(unsigned char key, int x, int y)
   }
   renderScene();
 }
-//---------------------------------------------------------------------------
+
+/**
+ * @brief Posiciona o Observador
+ *
+ * Esta função define o observador de nossa camera.
+ * No modo livre, o observador pode translatar em x,y,z. 
+ * Enquanto no modo fixa, o observador sempre estara olhando em direção ao cavalo.
+ * Essa função também define a rotação da camera.
+ *
+ */
+
 void posicionaObservador(void)
 {
-  // Specifies projection coordinate system
   glMatrixMode(GL_MODELVIEW);
-  // Initializes projection coordinate system
   glLoadIdentity();
-  // Specifies camera position and rotation
+  
   glTranslatef(posX, posY, -posZ);
   glRotatef(rotX, 1 + fabs(posX), 0, 0);
   glRotatef(rotY, 0, 1 + fabs(posY), 0);
+  
   if (cameraLivre == false)
     gluLookAt(posX, posY, posZ, xCavalo, 0, zCavalo, 0.0f, 1.0f, 0.0f);
 }
-//---------------------------------------------------------------------------
-// Function used to specify the preview volume
+
+/**
+ * @brief Especifica os parametros de visualização
+ *
+ * Esta função especifica o sistema de coordenadas de projeção e especifica sua projeção.
+ * 
+ * @details
+ * - Apos execução, chama o posicionaObservador()
+ * 
+ */
+
 void especificaParametrosVisualizacao(void)
 {
-  // Specifies projection coordinate system
   glMatrixMode(GL_PROJECTION);
-  // Initializes projection coordinate system
   glLoadIdentity();
 
-  // Specifies the perspective projection (angle, aspect, zMin, zMax)
   gluPerspective(angle, fAspect, 0.5, 500);
   posicionaObservador();
 }
@@ -707,7 +720,7 @@ void inputMouse(int button, int state, int x, int y)
     mouseHoldState = NO_BUTTON_HOLD;
   }
 
-  // Mouse scroll, up and down in free camera and zoom out/in when the camera is look at horse
+  // Mouse scroll, move no eixo z a camara durante a camera livre, na camera fixa da zoom-in zoom-out
   if (button == 3)
   {
     if (state == GLUT_DOWN)
@@ -793,7 +806,7 @@ void mouseMotion(int x, int y)
   lastX = x;
   lastY = y;
 
-  // When the middle mouse button is pressing, move the camera in X and Y
+  // Quando o botão do meio é segurado, move a camera em X e Y utilizando-se do movimento do mouse
   if (mouseHoldState == MIDDLE_BUTTON_HOLD && cameraLivre == true)
   {
     if (xoffset < 0)
@@ -814,7 +827,7 @@ void mouseMotion(int x, int y)
     }
   }
 
-  // When the left mouse button is pressing, rotate the camera in X and Y
+  // Quando o botão esquerdo é segurado, rotaciona a camera em X e Y utilizando-se do movimento do mouse
   if (mouseHoldState == LEFT_BUTTON_HOLD)
   {
 
