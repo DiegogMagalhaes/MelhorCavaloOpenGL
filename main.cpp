@@ -131,7 +131,7 @@ enum MOUSE_HOLD_STATE
 };
 static float lastX = 0, lastY = 0;
 static MOUSE_HOLD_STATE mouseHoldState = NO_BUTTON_HOLD;
-#define SENSITIVITY 0.5f;
+#define SENSITIVITY 1.0f;
 
 // TEXTURA
 GLuint idTextura;
@@ -228,17 +228,36 @@ void Print_Help(void)
   glRasterPos2i(pos_esq, altura -= fator);
   Print_String(GLUT_BITMAP_HELVETICA_12, "<,>(VÍRGULA) - MOVE CAVALO PARA DIREITA");
   glRasterPos2i(pos_esq, altura -= fator);
-  Print_String(GLUT_BITMAP_HELVETICA_12, "<LEFT> - ROTACIONA CAMERA PARA ESQUERDA");
-  glRasterPos2i(pos_esq, altura -= fator);
-  Print_String(GLUT_BITMAP_HELVETICA_12, "<RIGHT> - ROTACIONA CAMERA PARA DIREITA");
-  glRasterPos2i(pos_esq, altura -= fator);
-  Print_String(GLUT_BITMAP_HELVETICA_12, "<W> - INCLINA CAMERA PARA CIMA");
-  glRasterPos2i(pos_esq, altura -= fator);
-  Print_String(GLUT_BITMAP_HELVETICA_12, "<S> - INCLINA CAMERA PARA BAIXO");
+  Print_String(GLUT_BITMAP_HELVETICA_12, "'F1' - ALTERNA CAMINHADA/TROTE");
   glRasterPos2i(pos_esq, altura -= fator);
   Print_String(GLUT_BITMAP_HELVETICA_12, "'B' - MOVIMENTAR O CAVALO");
-  glRasterPos2i(pos_esq, altura -= fator);
-  Print_String(GLUT_BITMAP_HELVETICA_12, "'MOUSE CLICK + MOVIMENTO MOUSE' - MOVIMENTAR MUNDO");
+  
+  if(cameraLivre == false){ //Opções camera cavalo
+    glRasterPos2i(pos_esq, altura -= fator);
+    Print_String(GLUT_BITMAP_HELVETICA_12, "<LEFT> - ROTACIONA CAMERA PARA ESQUERDA");
+    glRasterPos2i(pos_esq, altura -= fator);
+    Print_String(GLUT_BITMAP_HELVETICA_12, "<RIGHT> - ROTACIONA CAMERA PARA DIREITA");
+    glRasterPos2i(pos_esq, altura -= fator);
+    Print_String(GLUT_BITMAP_HELVETICA_12, "<W> - INCLINA CAMERA PARA CIMA");
+    glRasterPos2i(pos_esq, altura -= fator);
+    Print_String(GLUT_BITMAP_HELVETICA_12, "<S> - INCLINA CAMERA PARA BAIXO");
+    glRasterPos2i(pos_esq, altura -= fator);  
+    Print_String(GLUT_BITMAP_HELVETICA_12, "'MOUSE CLICK + MOVIMENTO MOUSE' - MOVIMENTAR MUNDO");
+    glRasterPos2i(pos_esq, altura -= fator);
+    Print_String(GLUT_BITMAP_HELVETICA_12, "'SCROLL' - ZOOM IN/OUT");  
+    glRasterPos2i(pos_esq, altura -= fator);
+    Print_String(GLUT_BITMAP_HELVETICA_12, "C - ATIVAR CAMERA LIVRE");
+  }else{ //Opções camera livre
+    glRasterPos2i(pos_esq, altura -= fator);  
+    Print_String(GLUT_BITMAP_HELVETICA_12, "'MOUSE CLICK + MOVIMENTO MOUSE' - ROTACIONA");
+    glRasterPos2i(pos_esq, altura -= fator);
+    Print_String(GLUT_BITMAP_HELVETICA_12, "'SCROLL' - MOVE EM Z");  
+        glRasterPos2i(pos_esq, altura -= fator);
+    Print_String(GLUT_BITMAP_HELVETICA_12, "SCROLL + MOVIMENTO MOUSE' - MOVE EM X e Y");  
+    glRasterPos2i(pos_esq, altura -= fator);
+    Print_String(GLUT_BITMAP_HELVETICA_12, "C - ATIVAR CAMERA CAVALO");
+  }
+
   glRasterPos2i(pos_esq, altura -= fator);
   Print_String(GLUT_BITMAP_HELVETICA_12, "ESC - SAIR DO PROGRAMA");
   glColor3f(1.0, 1.0, 1.0);
@@ -377,18 +396,20 @@ void initScene()
 
 void updateCameraPosition()
 {
+  glLoadIdentity();
+
   float cameraDistance = 3.5; // Distância desejada da câmera ao cavalo
   float cameraHeight = 0;     // Altura da câmera em relação ao cavalo
 
   // Calcular a nova posição da câmera
-  float cameraX = xCavalo - cameraDistance * cos(rotY * M_PI / 180.0f);
-  float cameraY = cameraHeight + cameraDistance * sin(rotX * M_PI / 180.0f);
-  float cameraZ = zCavalo - cameraDistance * sin(rotY * M_PI / 180.0f);
+  posX = xCavalo - cameraDistance * cos(rotY * M_PI / 180.0f);
+  posY = cameraHeight + cameraDistance * sin(rotX * M_PI / 180.0f);
+  posZ = zCavalo - cameraDistance * sin(rotY * M_PI / 180.0f);
 
   // Atualizar a posição da câmera
   if (!cameraLivre)
   {
-    gluLookAt(cameraX, cameraY, cameraZ, xCavalo, 0, zCavalo, 0.0f, 1.0f, 0.0f);
+    gluLookAt(posX, posY, posZ, xCavalo, 0, zCavalo, 0.0f, 1.0f, 0.0f);
   }
 }
 void renderScene(void)
@@ -396,7 +417,6 @@ void renderScene(void)
   int i;
   int j;
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Limpe a tela e o buffer
-  glLoadIdentity();
 
   if (cameraLivre == false)
     updateCameraPosition();
@@ -565,16 +585,16 @@ void switchCameraMode(bool mode)
   }
   else
   {
+    angle = 50;
     rotX = 20;
     rotY = 0;
     incrementZ = 5;
     posX = xCavalo;
     posY = 0;
     posZ = incrementZ + zCavalo;
-    angle = 50;
   }
   cameraLivre = mode;
-  posicionaObservador();
+  especificaParametrosVisualizacao();
 }
 //---------------------------------------------------------------------------
 void processNormalKeys(unsigned char key, int x, int y)
@@ -658,7 +678,6 @@ void especificaParametrosVisualizacao(void)
   gluPerspective(angle, fAspect, 0.5, 500);
   posicionaObservador();
 }
-
 //---------------------------------------------------------------------------
 void inputMouse(int button, int state, int x, int y)
 {
@@ -688,15 +707,17 @@ void inputMouse(int button, int state, int x, int y)
     mouseHoldState = NO_BUTTON_HOLD;
   }
 
-  // Mouse scroll, up and down
+  // Mouse scroll, up and down in free camera and zoom out/in when the camera is look at horse
   if (button == 3)
   {
     if (state == GLUT_DOWN)
     {
-      posZ--;
-      if (cameraLivre == false)
-      {
-        incrementZ--;
+      if(cameraLivre){
+        posZ--;
+      }
+      else{
+        if (angle >= 10)//zoom-in
+          angle -= 5;
       }
     }
   }
@@ -704,10 +725,12 @@ void inputMouse(int button, int state, int x, int y)
   {
     if (state == GLUT_DOWN)
     {
-      posZ++;
-      if (cameraLivre == false)
-      {
-        incrementZ++;
+      if(cameraLivre){
+        posZ++;
+      }
+      else{
+        if (angle <= 60)//zoom-out
+          angle += 5;
       }
     }
   }
@@ -734,7 +757,7 @@ void inputKey(int key, int x, int y)
     break;
   case GLUT_KEY_DOWN:
     // Zoom-out
-    if (angle <= 130)
+    if (angle <= 60)
       angle += 5;
     break;
   case GLUT_KEY_F1:

@@ -1,27 +1,37 @@
 Grupo Atual(Responsavel pelas melhorias): Diego Gabriel
-	Alexandre Júlio
+	Alexandre Jï¿½lio
 	
 Grupo Original: Daniel Carlos Casarotto
        Eduardo Koerich
-       José Otávio Carlomagno Filho
+       Josï¿½ Otï¿½vio Carlomagno Filho
 
 
 Teclas:
 
-C- Ativa e Desativa o modo de camera livre. Enquanto a camera não for livre, a camera seguira o cavalo
+Durante camera livre:
+       Segurar Botï¿½o esquerdo do mouse e move-lo - rotacionar camera
+       Segurar Botï¿½o do meio do mouse e move-lo - mover em x e y(Sï¿½ funciona durante o modo de camera livre)
+       Scrollar mouse - mover em z
 
-Segurar Botão esquerdo do mouse e move-lo - rotacionar camera
-Segurar Botão do meio do mouse e move-lo - mover em x e y(Só funciona durante o modo de camera livre)
-Segurar Scrollar mouse - mover em z
+Durante camera cavalo:
+       Segurar Botï¿½o esquerdo do mouse e move-lo - rotacionar em volta do cavalo
+       Scrollar mouse - zoom in/out
+
 seta para cima - zoom-in
 seta para baixo - zoom-out
+seta para esquerda - rotaciona para esquerda
+seta para direita - rotaciona para direita
 
+c     - Ativa e Desativa o modo de camera livre. Enquanto a camera nï¿½o for livre, a camera seguira o cavalo
+h     - Mostra/esconde menu(HELP)
+w     - Inclina camera para cima
+s     - Inclina camera para baixo
 b     - Andar com o cavalo
 <     - Girar o cavalo para a esquerda
 >     - Girar o cavalo para a direita
 F1    - Alternar entre caminhada/trote
-F5    - Exibição em tela Cheia
-F6    - Exibição em Janela
-F7    - Habilitar/Desabilitar iluminação
-F8    - Tirar/Colocar árvores
-F11   - Deixar o cavalo parado (apenas mexe as pernas, mas não se movimenta)
+F5    - Exibiï¿½ï¿½o em tela Cheia
+F6    - Exibiï¿½ï¿½o em Janela
+F7    - Habilitar/Desabilitar iluminaï¿½ï¿½o
+F8    - Tirar/Colocar ï¿½rvores
+F11   - Deixar o cavalo parado (apenas mexe as pernas, mas nï¿½o se movimenta)
